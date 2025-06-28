@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dokumentasi Noura & Galang</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Dokumentasi Perjalanan Kami</h1>
+    <p>Galang & Noura</p>
+  </header>
+  <main>
+    <section>
+      <h2>Tambah Kenangan</h2>
+      <form id="noteForm">
+        <label for="foto">Upload Foto:</label><br>
+        <input type="file" id="foto" accept="image/*"><br><br>
+        <label for="catatan">Catatan:</label><br>
+        <textarea id="catatan" rows="4" cols="50"></textarea><br><br>
+        <button type="submit">Tambahkan</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Catatan Tersimpan</h2>
+      <div id="notesContainer"></div>
+    </section>
+  </main>
+  <footer>
+    &copy; 2025 Galang & Noura. Dibuat dengan penuh cinta.
+  </footer>
+
+  <script>
+    const form = document.getElementById('noteForm');
+    const container = document.getElementById('notesContainer');
+    const notes = JSON.parse(localStorage.getItem('notes')) || [];
+
+    renderNotes();
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const fileInput = document.getElementById('foto');
+      const noteText = document.getElementById('catatan').value;
+      const reader = new FileReader();
+
+      if (fileInput.files[0]) {
+        reader.readAsDataURL(fileInput.files[0]);
+        reader.onload = function () {
+          const newNote = {
+            image: reader.result,
+            text: noteText
+          };
+          notes.push(newNote);
+          localStorage.setItem('notes', JSON.stringify(notes));
+          renderNotes();
+          form.reset();
+        }
+      } else {
+        const newNote = {
+          image: null,
+          text: noteText
+        };
+        notes.push(newNote);
+        localStorage.setItem('notes', JSON.stringify(notes));
+        renderNotes();
+        form.reset();
+      }
+    });
+
+    function renderNotes() {
+      container.innerHTML = '';
+      notes.forEach(note => {
+        const noteDiv = document.createElement('div');
+        noteDiv.className = 'note';
+
+        if (note.image) {
+          const imgLink = document.createElement('a');
+          imgLink.href = note.image;
+          imgLink.target = '_blank';
+
+          const img = document.createElement('img');
+          img.src = note.image;
+          img.alt = 'Foto';
+          img.className = 'note-img';
+          imgLink.appendChild(img);
+
+          noteDiv.appendChild(imgLink);
+        }
+
+        const text = document.createElement('p');
+        text.textContent = note.text;
+        noteDiv.appendChild(text);
+
+        container.appendChild(noteDiv);
+      });
+    }
+  </script>
+</body>
+</html>
