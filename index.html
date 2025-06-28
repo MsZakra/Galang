@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dokumentasi Noura & Galang</title>
+  <title>Noura & Galang</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,6 +21,7 @@
         <textarea id="catatan" rows="4" cols="50"></textarea><br><br>
         <button type="submit">Tambahkan</button>
       </form>
+      <p id="uploadStatus"></p>
     </section>
 
     <section>
@@ -35,8 +36,9 @@
   <script>
     const form = document.getElementById('noteForm');
     const container = document.getElementById('notesContainer');
-    const notes = JSON.parse(localStorage.getItem('notes')) || [];
+    const uploadStatus = document.getElementById('uploadStatus');
 
+    const notes = JSON.parse(localStorage.getItem('notes')) || [];
     renderNotes();
 
     form.addEventListener('submit', function (e) {
@@ -44,31 +46,53 @@
 
       const fileInput = document.getElementById('foto');
       const noteText = document.getElementById('catatan').value;
-      const reader = new FileReader();
 
-      if (fileInput.files[0]) {
-        reader.readAsDataURL(fileInput.files[0]);
-        reader.onload = function () {
-          const newNote = {
-            image: reader.result,
-            text: noteText
-          };
-          notes.push(newNote);
-          localStorage.setItem('notes', JSON.stringify(notes));
-          renderNotes();
-          form.reset();
-        }
-      } else {
-        const newNote = {
-          image: null,
-          text: noteText
-        };
-        notes.push(newNote);
-        localStorage.setItem('notes', JSON.stringify(notes));
-        renderNotes();
-        form.reset();
+      const file = fileInput.files[0];
+      if (!file) {
+        addNote(null, noteText);
+        return;
       }
+
+      const reader = new FileReader();
+      reader.onloadend = function () {
+        const base64 = reader.result.split(',')[1];
+        const clientId = "3b3f8906b5e2732"; // Ganti dengan Client ID Imgur milikmu
+
+        uploadStatus.textContent = "Mengunggah gambar...";
+
+        fetch("https://api.imgur.com/3/image", {
+          method: "POST",
+          headers: {
+            Authorization: "Client-ID " + clientId,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            image: base64,
+            type: "base64"
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            addNote(data.data.link, noteText);
+            uploadStatus.textContent = "Berhasil diunggah!";
+          } else {
+            uploadStatus.textContent = "Gagal upload ke Imgur.";
+          }
+        })
+        .catch(() => uploadStatus.textContent = "Terjadi kesalahan saat upload.");
+      };
+
+      reader.readAsDataURL(file);
     });
+
+    function addNote(imageUrl, text) {
+      const newNote = { image: imageUrl, text: text };
+      notes.push(newNote);
+      localStorage.setItem('notes', JSON.stringify(notes));
+      renderNotes();
+      form.reset();
+    }
 
     function renderNotes() {
       container.innerHTML = '';
